@@ -5,7 +5,7 @@ import { CreateWorkspaceBody, UpdateWorkspaceBody } from "../dto/workspace.dto";
 
 const workspaceService = new WorkspaceService()
 
-export const workspaceController = new Elysia({ prefix: '/workspace' })
+export const workspaceController = new Elysia({ prefix: '/workspaces' })
 
     // GET /workspace
     .get('/', async () => {

@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import cors from "@elysiajs/cors";
 import { workspaceController } from "./controllers/workspace.controller";
 import { BadRequestError } from "./utils/error";
+import { permissionController } from "./controllers/permission.controller";
 
 const PORT = 3001;
 
@@ -40,6 +41,7 @@ const app = new Elysia()
   })
   .get("/", () => "Welcome to User Management Microservice")
   .use(workspaceController)
+  .use(permissionController)
   .listen(PORT);
 
 console.log(
