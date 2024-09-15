@@ -1,9 +1,19 @@
 import { Permission, Workspace } from "@prisma/client";
 import { db } from "../utils/db";
 import { CreatePermissionInput, UpdatePermissionInput } from "../dto/permission.dto"; // Import DTOs
+import { NotFoundError } from "elysia";
+import { BadRequestError } from "../utils/error";
 
 export default class PermissionService {
     async getPermissionsByWorkspaceId(workspaceId: number): Promise<Permission[]> {
+        // Check if there is workspace
+        const workspace = await db.workspace.findUnique({
+            where: {
+                id: workspaceId
+            }
+        });
+        if (!workspace) throw new NotFoundError()
+            
         return await db.permission.findMany({
             where: {
                 workspaceId
@@ -12,21 +22,38 @@ export default class PermissionService {
     }
 
     async getPermissionById(workspaceId: number, permissionId: number): Promise<Permission | null> {
-        return await db.permission.findUnique({
+        const permission = await db.permission.findUnique({
             where: {
                 id: permissionId,
                 workspaceId
             }
         });
+
+        if (!permission) throw new NotFoundError()
+
+        return permission
     }
 
     async createPermission(workspaceId: number, data: CreatePermissionInput): Promise<Permission> {
-        return await db.permission.create({
-            data: {
-                workspaceId,
-                ...data
+        // Check if there is workspace
+        const workspace = await db.workspace.findUnique({
+            where: {
+                id: workspaceId
             }
         });
+        if (!workspace) throw new NotFoundError()
+        
+        try {
+            return await db.permission.create({
+                data: {
+                    workspaceId,
+                    ...data
+                }
+            });
+        } catch (err) {
+            throw new BadRequestError("The permission already exists")
+        }
+        
     }
 
     async updatePermission(workspaceId: number, permissionId: number, data: UpdatePermissionInput): Promise<Permission | null> {
@@ -39,7 +66,7 @@ export default class PermissionService {
                 data
             });
         } catch (error) {
-            return null;
+            throw new NotFoundError()
         }
     }
 
