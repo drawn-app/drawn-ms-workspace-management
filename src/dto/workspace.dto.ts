@@ -2,10 +2,9 @@ import { PermissionType } from "@prisma/client"
 import { Static, t } from "elysia"
 
 export const CreateWorkspaceBody = t.Object({
-    ownerId: t.String({
-        error: "ownerId is required",
+    ownerId: t.Optional(t.String({
         minLength: 1
-    }),
+    })),
     name: t.String({
         error: "name is required",
         minLength: 1
