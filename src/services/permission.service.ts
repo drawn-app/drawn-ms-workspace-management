@@ -44,12 +44,14 @@ export default class PermissionService {
         if (!workspace) throw new NotFoundError()
         
         try {
-            return await db.permission.create({
+            const permission = await db.permission.create({
                 data: {
                     workspaceId,
                     ...data
                 }
             });
+
+            return permission
         } catch (err) {
             throw new BadRequestError("The permission already exists")
         }

@@ -2,21 +2,24 @@ import Elysia, { NotFoundError, t } from "elysia";
 import WorkspaceService from "../services/workspace.service";
 import { isNumeric } from "../utils/dataValidator";
 import { CreateWorkspaceBody, UpdateWorkspaceBody } from "../dto/workspace.dto";
+import { UnauthorizedError } from "../utils/error";
 
 const workspaceService = new WorkspaceService()
 
 export const workspaceController = new Elysia({ prefix: '/workspaces' })
 
     // GET /workspace
-    .get('/', async () => {
-        return await workspaceService.getAllWorkspace()
+    .get('/', async ({ headers }) => {
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
+        return await workspaceService.getAllWorkspace(headers['x-id'], headers['x-role'])
     })
 
     // GET /workspace/:id
-    .get('/:id', async ({ params }) => {
+    .get('/:id', async ({ params, headers }) => {
         if (!isNumeric(params.id)) throw new NotFoundError()
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
 
-        const workspace = await workspaceService.getWorkspaceById(parseInt(params.id))
+        const workspace = await workspaceService.getWorkspaceById(parseInt(params.id), headers['x-id'], headers['x-role'])
 
         if (!workspace) throw new NotFoundError()
 
@@ -24,8 +27,10 @@ export const workspaceController = new Elysia({ prefix: '/workspaces' })
     })
 
     // POST /workspace
-    .post('/', async ({ body }) => {
-        const workspace = await workspaceService.createWorkspace(body)
+    .post('/', async ({ body, headers }) => {
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
+
+        const workspace = await workspaceService.createWorkspace(headers['x-id'], body)
         
         return workspace
     }, {

@@ -1,23 +1,43 @@
 import { Workspace } from "@prisma/client";
 import { db } from "../utils/db";
 import { CreateWorkspaceInput, UpdateWorkspaceInput } from "../dto/workspace.dto";
+import { NotFoundError } from "elysia";
 
 export default class WorkspaceService {
-    async getAllWorkspace(): Promise<Workspace[]> {
-        return await db.workspace.findMany()
+    async getAllWorkspace(userId: string, role: string): Promise<Workspace[]> {
+        if (role !== 'admin') {
+            return await db.workspace.findMany({
+                where: {
+                    ownerId: userId
+                }
+            })
+        } else {
+            return await db.workspace.findMany()
+        }
+        
     }
 
-    async getWorkspaceById(id: number): Promise<Workspace | null> {
-        return await db.workspace.findUnique({
+    async getWorkspaceById(id: number, userId: string, role: string): Promise<Workspace | null> {
+        const workspace = await db.workspace.findUnique({
             where: {
                 id: id
+            },
+            include: {
+                permissions: true
             }
         })
+
+        if (!workspace) throw new NotFoundError("Workspace not found")
+
+        return workspace
     }
 
-    async createWorkspace(data: CreateWorkspaceInput): Promise<Workspace> {
+    async createWorkspace(userId: string, data: CreateWorkspaceInput): Promise<Workspace> {
         return await db.workspace.create({
-            data: data
+            data: {
+                ownerId: userId,
+                ...data
+            }
         })
     }
 
