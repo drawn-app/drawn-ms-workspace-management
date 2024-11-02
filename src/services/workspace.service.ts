@@ -1,7 +1,8 @@
-import { Workspace } from "@prisma/client";
+import { PermissionType, RecentWorkspace, Workspace } from "@prisma/client";
 import { db } from "../utils/db";
 import { CreateWorkspaceInput, UpdateWorkspaceInput } from "../dto/workspace.dto";
 import { NotFoundError } from "elysia";
+import { ForbiddenError } from "../utils/error";
 
 export default class WorkspaceService {
     async getAllWorkspace(userId: string, role: string): Promise<Workspace[]> {
@@ -65,6 +66,75 @@ export default class WorkspaceService {
             return true
         } catch (error) {
             return false
+        }
+    }
+
+    async checkPermission(id: number, userId: string, role: string): Promise<{ permission: PermissionType } | null> {
+        const workspace = await db.workspace.findUnique({
+            where: {
+                id: id
+            }
+        })
+
+        if (!workspace) throw new NotFoundError("Workspace not found")
+
+        if (workspace.ownerId === userId || role === 'admin') {
+            return {
+                permission: PermissionType.editor
+            }
+        }
+
+        const permission = await db.permission.findFirst({
+            where: {
+                workspaceId: id,
+                userId: userId
+            }
+        })
+
+        if (permission) {
+            return {
+                permission: permission.permissionType
+            }
+        }
+
+        throw new ForbiddenError("You don't have permission to access this workspace")
+    }
+
+    async getRecentWorkspaces(userId: string): Promise<RecentWorkspace[]> {
+        return await db.recentWorkspace.findMany({
+            where: {
+                userId: userId
+            },
+            orderBy: {
+                latestView: 'desc'
+            }
+        })
+    }
+
+    async addRecentWorkspace(userId: string, workspaceId: number): Promise<RecentWorkspace> {
+        const recentWorkspace = await db.recentWorkspace.findFirst({
+            where: {
+                userId: userId,
+                workspaceId: workspaceId
+            }
+        })
+
+        if (recentWorkspace) {
+            return await db.recentWorkspace.update({
+                where: {
+                    id: recentWorkspace.id
+                },
+                data: {
+                    latestView: new Date()
+                }
+            })
+        } else {
+            return await db.recentWorkspace.create({
+                data: {
+                    userId: userId,
+                    workspaceId: workspaceId
+                }
+            })
         }
     }
 }
