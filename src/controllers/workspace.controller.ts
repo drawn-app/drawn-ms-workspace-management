@@ -8,6 +8,15 @@ const workspaceService = new WorkspaceService()
 
 export const workspaceController = new Elysia({ prefix: '/workspaces' })
 
+    // GET /workspace/recent
+    .get('/recent', async ({ headers }) => {
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
+        
+        const workspaces = await workspaceService.getRecentWorkspaces(headers['x-id'])
+    
+        return workspaces
+    })
+
     // GET /workspace
     .get('/', async ({ headers }) => {
         if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
@@ -64,3 +73,26 @@ export const workspaceController = new Elysia({ prefix: '/workspaces' })
             message: "Success"
         }
     })
+
+    // POST /workspace/:id/checkPermission
+    .post('/:id/checkPermission', async ({ params, headers }) => {
+        if (!isNumeric(params.id)) throw new NotFoundError()
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
+
+        const permission = await workspaceService.checkPermission(parseInt(params.id), headers['x-id'], headers['x-role'])
+
+        return permission
+    })
+
+    // POST /workspace/:id/enter
+    .post('/:id/enter', async ({ params, headers }) => {
+        if (!isNumeric(params.id)) throw new NotFoundError()
+        if (!headers['x-id'] || !headers['x-role']) return new UnauthorizedError()
+
+        const permission = await workspaceService.checkPermission(parseInt(params.id), headers['x-id'], headers['x-role'])
+        await workspaceService.addRecentWorkspace(headers['x-id'], parseInt(params.id))
+
+        return permission
+    })
+
+    

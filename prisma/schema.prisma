@@ -23,6 +23,7 @@ model Workspace {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @default(now()) @updatedAt
   permissions       Permission[]   @relation("WorkspacePermissions")
+  recentlyOpen      RecentWorkspace[] @relation("RecentlyOpen")
 }
 
 model Permission {
@@ -33,6 +34,16 @@ model Permission {
   permissionType PermissionType
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @default(now()) @updatedAt
+
+  @@unique([workspaceId, userId])
+}
+
+model RecentWorkspace {
+  id         Int      @id @default(autoincrement())
+  workspace  Workspace @relation("RecentlyOpen", fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId Int
+  userId     String
+  latestView DateTime @default(now())
 
   @@unique([workspaceId, userId])
 }
