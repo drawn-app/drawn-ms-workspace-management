@@ -77,8 +77,16 @@ export default class WorkspaceService {
         })
 
         if (!workspace) throw new NotFoundError("Workspace not found")
+        
+        // Editor
 
         if (workspace.ownerId === userId || role === 'admin') {
+            return {
+                permission: PermissionType.editor
+            }
+        }
+
+        if (workspace.globalSharingType === 'editor') {
             return {
                 permission: PermissionType.editor
             }
@@ -91,9 +99,23 @@ export default class WorkspaceService {
             }
         })
 
-        if (permission) {
+        if (permission && permission.permissionType === PermissionType.editor) {
             return {
-                permission: permission.permissionType
+                permission: PermissionType.editor
+            }
+        }
+
+        // Viewer
+
+        if (workspace.globalSharingType === 'viewer') {
+            return {
+                permission: PermissionType.viewer
+            }
+        }
+
+        if (permission && permission.permissionType === PermissionType.viewer) {
+            return {
+                permission: PermissionType.viewer
             }
         }
 
@@ -107,6 +129,9 @@ export default class WorkspaceService {
             },
             orderBy: {
                 latestView: 'desc'
+            },
+            include: {
+                workspace: true
             }
         })
     }
